@@ -1,5 +1,3 @@
-// tasks.js
-
 const express = require('express');
 const router = express.Router();
 const fs = require('fs');
@@ -24,7 +22,7 @@ router.put('/update', (req, res) => {
     let tasks = readTasksFromFile();
     tasks = tasks.map(task => {
         if (task.fach === updatedTask.fach && task.aufgabe === updatedTask.aufgabe) {
-            return updatedTask;
+            return { ...task, ...updatedTask };
         }
         return task;
     });
