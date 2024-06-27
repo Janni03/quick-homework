@@ -1,52 +1,65 @@
-
+// tasks.js
 
 const express = require('express');
+const router = express.Router();
 const fs = require('fs');
 const path = require('path');
-const router = express.Router();
-
 const tasksFilePath = path.join(__dirname, 'aufgaben.json');
 
-// Hilfsfunktion zum Lesen der JSON-Datei
-const readTasksFromFile = () => {
-    if (!fs.existsSync(tasksFilePath)) {
-        return [];
-    }
-    const data = fs.readFileSync(tasksFilePath, 'utf-8');
-    return JSON.parse(data);
-};
-
-// Hilfsfunktion zum Schreiben in die JSON-Datei
-const writeTasksToFile = (tasks) => {
-    fs.writeFileSync(tasksFilePath, JSON.stringify(tasks, null, 2));
-};
-
-// GET: Alle Aufgaben abrufen
-router.get('/', (req, res) => {
-    const tasks = readTasksFromFile();
+router.get('/all', (req, res) => {
+    let tasks = readTasksFromFile();
     res.json(tasks);
 });
 
-// POST: Neue Aufgabe hinzufügen
-router.post('/', (req, res) => {
-    const { fach, aufgabe, datum, notizen } = req.body;
-    const tasks = readTasksFromFile();
-    const newTask = { id: Date.now(), fach, aufgabe, datum, notizen };
+router.post('/add', (req, res) => {
+    const newTask = req.body;
+    let tasks = readTasksFromFile();
     tasks.push(newTask);
     writeTasksToFile(tasks);
     res.json(newTask);
 });
 
-// DELETE: Aufgabe löschen
-router.delete('/:id', (req, res) => {
-    const { id } = req.params;
+router.put('/update', (req, res) => {
+    const updatedTask = req.body;
     let tasks = readTasksFromFile();
-    tasks = tasks.filter(task => task.id != id);
+    tasks = tasks.map(task => {
+        if (task.fach === updatedTask.fach && task.aufgabe === updatedTask.aufgabe) {
+            return updatedTask;
+        }
+        return task;
+    });
     writeTasksToFile(tasks);
-    res.json({ message: 'Task deleted' });
+    res.json(updatedTask);
 });
 
+router.delete('/delete', (req, res) => {
+    const { fach, aufgabe } = req.query;
+    let tasks = readTasksFromFile();
+    tasks = tasks.filter(task => !(task.fach === fach && task.aufgabe === aufgabe));
+    writeTasksToFile(tasks);
+    res.json({ fach, aufgabe });
+});
+
+function readTasksFromFile() {
+    try {
+        const data = fs.readFileSync(tasksFilePath, 'utf8');
+        return data ? JSON.parse(data) : [];
+    } catch (error) {
+        console.error('Fehler beim Lesen der Aufgaben:', error);
+        return [];
+    }
+}
+
+function writeTasksToFile(tasks) {
+    try {
+        fs.writeFileSync(tasksFilePath, JSON.stringify(tasks, null, 2));
+    } catch (error) {
+        console.error('Fehler beim Schreiben der Aufgaben:', error);
+    }
+}
+
 module.exports = router;
+
 
 
 
