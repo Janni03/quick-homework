@@ -4,6 +4,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
 function addRow() {
     let fach = document.getElementById('inputFach').value;
+document.addEventListener('DOMContentLoaded', (event) => {
+    loadTableData();
+});
+
+function addRow() {
+    let fach = document.getElementById('inputFach').value;
     let aufgabe = document.getElementById('inputAufgabe').value;
     let datum = document.getElementById('inputDatum').value;
     let notizen = document.getElementById('inputNotizen').value;
@@ -56,21 +62,64 @@ function addTaskToTable(task) {
 
     cell1.innerHTML = `<input type="text" value="${task.fach}" readonly />`;
     cell2.innerHTML = `<input type="text" value="${task.aufgabe}" readonly />`;
-    cell3.innerHTML = `<input type="date" value="${task.datum}" readonly />`;
+    cell3.innerHTML = `<input type="date" value="${task.datum}" />`;
     cell4.innerHTML = `<input type="checkbox" onchange="toggleComplete(this)" data-fach="${task.fach}" data-aufgabe="${task.aufgabe}" ${task.erledigt ? 'checked' : ''} />`;
-    cell5.innerHTML = `<input type="text" value="${task.notizen}" readonly />`;
+    cell5.innerHTML = `<input type="text" value="${task.notizen}" />`;
     cell6.innerHTML = `<button class="deleteRow" onclick="deleteRow(this)" data-fach="${task.fach}" data-aufgabe="${task.aufgabe}">Löschen</button>`;
+
+    // Event listener for changes in the date and notes
+    cell3.querySelector('input').addEventListener('change', (e) => updateTask(newRow, 'datum', e.target.value));
+    cell5.querySelector('input').addEventListener('change', (e) => updateTask(newRow, 'notizen', e.target.value));
 }
 
 function toggleComplete(checkbox) {
+    let row = checkbox.closest('tr');
     let fach = checkbox.dataset.fach;
     let aufgabe = checkbox.dataset.aufgabe;
     let erledigt = checkbox.checked;
 
+    let datum = row.cells[2].querySelector('input').value;
+    let notizen = row.cells[4].querySelector('input').value;
+
     let task = {
         fach,
         aufgabe,
+        datum,
+        notizen,
         erledigt
+    };
+
+    fetch('/tasks/update', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(task)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Aufgabe aktualisiert:', data);
+    })
+    .catch(error => {
+        console.error('Fehler beim Aktualisieren der Aufgabe:', error);
+    });
+}
+
+function updateTask(row, key, value) {
+    let fach = row.cells[0].querySelector('input').value;
+    let aufgabe = row.cells[1].querySelector('input').value;
+
+    let datum = row.cells[2].querySelector('input').value;
+    let notizen = row.cells[4].querySelector('input').value;
+    let erledigt = row.cells[3].querySelector('input').checked;
+
+    let task = {
+        fach,
+        aufgabe,
+        datum,
+        notizen,
+        erledigt,
+        [key]: value
     };
 
     fetch('/tasks/update', {
